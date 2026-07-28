@@ -12,13 +12,14 @@ namespace ServerCore
 
         static void Thread_1()
         {
+            //atomic 원자성
             for (int i = 0; i < 10000; i++)
-                number++;
+                { Interlocked.Increment(ref number); }
         }
         static void Thread_2()
         {
             for (int i = 0; i < 10000; i++)
-                number--;
+                { Interlocked.Decrement(ref number); }
         }
         static void Main(string[] args)
         {
