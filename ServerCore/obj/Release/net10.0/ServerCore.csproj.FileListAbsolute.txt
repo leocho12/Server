@@ -12,3 +12,4 @@ E:\git_hub\Server\ServerCore\obj\Release\net10.0\refint\ServerCore.dll
 E:\git_hub\Server\ServerCore\obj\Release\net10.0\ServerCore.pdb
 E:\git_hub\Server\ServerCore\obj\Release\net10.0\ServerCore.genruntimeconfig.cache
 E:\git_hub\Server\ServerCore\obj\Release\net10.0\ref\ServerCore.dll
+E:\git_hub\Server\ServerCore\obj\Release\net10.0\ServerCore.sourcelink.json

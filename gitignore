@@ -1,0 +1,99 @@
+# ============================
+# Visual Studio
+# ============================
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+
+# ============================
+# 빌드 결과물
+# ============================
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+out/
+build/
+publish/
+
+# ============================
+# .NET / C#
+# ============================
+*.dll
+*.exe
+*.pdb
+*.cache
+*.nupkg
+*.snupkg
+project.lock.json
+project.fragment.lock.json
+artifacts/
+
+# NuGet 패키지
+*.nuget.props
+*.nuget.targets
+packages/
+!packages/repositories.config
+
+# ============================
+# 환경 설정 (보안)
+# ============================
+appsettings.Development.json
+appsettings.Local.json
+*.env
+.env
+.env.*
+secrets.json
+
+# DB 연결 정보 등 민감한 설정
+**/ConnectionStrings.json
+
+# ============================
+# OS 자동 생성 파일
+# ============================
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# ============================
+# 로그 / 임시 파일
+# ============================
+*.log
+*.tmp
+*.temp
+crash_*.txt
+
+# ============================
+# IDE - Rider (JetBrains)
+# ============================
+.idea/
+*.sln.iml
+
+# ============================
+# IDE - VSCode
+# ============================
+.vscode/
+!.vscode/extensions.json
+
+# ============================
+# Docker (나중에 쓸 수도 있음)
+# ============================
+docker-compose.override.yml
+
+# ============================
+# 테스트 결과
+# ============================
+TestResults/
+coverage/
+*.coverage
+*.coveragexml
