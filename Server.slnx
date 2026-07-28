@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="DummyClient/DummyClient.csproj" />
+  <Project Path="Server/Server.csproj" />
+  <Project Path="ServerCore/ServerCore.csproj" />
+</Solution>
