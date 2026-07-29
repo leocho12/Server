@@ -6,60 +6,38 @@ using System.Threading.Tasks;
 //=========================================
 namespace ServerCore
 {
-    //재귀적 락을 허용할지(no)
+    //재귀적 락을 허용할지(yes) writelock가진 상태에서 writelock을 가지는 건 허용/ readlock가진 상태에서 writelock을 가지는 건 불가
     //스핀 락 정책(5000번 -> 양보)
     class Program
     {
-        const int EMPTY_FLAG= 0x0000000;
-        const int WRITE_MASK = 0x7FF0000;
-        const int READ_MASK = 0x000FFFF;
-        const int MAX_SPIN_COUNT = 5000;
+        static volatile int count = 0;
+        static Lock _lock = new Lock();
 
-        //[unused(1)] [writerthreadid(15)] [readcount(16)] total 32 bytes
-        int _flag = EMPTY_FLAG;
-
-        public void WriteLock()
+        static void Main(string[] args)
         {
-            //아무도 writelock이나readlock을 가지고 있지 않으면 경합해서 소유권 얻음
-            int desired = (Thread.CurrentThread.ManagedThreadId << 16) & WRITE_MASK;
-            while (true)
+            Task t1 = new Task(delegate ()
             {
-                for(int i = 0; i < MAX_SPIN_COUNT; i++)
+                for(int i = 0; i < 100000; i++)
                 {
-                    if (Interlocked.CompareExchange(ref _flag, desired, EMPTY_FLAG) == EMPTY_FLAG)
-                    {
-                        //시도 해서 성공하면 return
-                        return;
-                    }
+                    _lock.WriteLock();
+                    count++;
+                    _lock.WriteUnlock();
                 }
-
-                //max_spin_count만큼 시도했는데도 실패하면 스레드 양보
-                Thread.Yield();
-            }
-        }
-        public void WriteUnlock()
-        {
-            Interlocked.Exchange(ref _flag, EMPTY_FLAG);
-        } 
-        public void ReadLock()
-        {
-            //아무도 writelock을 가지고 있지 않으면 readcount를 증가시킴
-            while (true)
+            });
+            Task t2 = new Task(delegate ()
             {
-                for(int i = 0; i < MAX_SPIN_COUNT; i++)
+                for (int i = 0; i < 100000; i++)
                 {
-                    int expected = _flag & READ_MASK;
-                    if (Interlocked.CompareExchange(ref _flag,expected+1,expected) == expected)
-                    {
-                        return;
-                    }
+                    _lock.WriteLock();
+                    count--;
+                    _lock.WriteUnlock();
                 }
-                Thread.Yield();
-            }
-        }
-        public void ReadUnlock() 
-        {
-            
+            });
+            t1.Start();
+            t2.Start();
+
+            Task.WaitAll(t1, t2);
+            Console.WriteLine(count);
         }
     }
 }
