@@ -6,32 +6,19 @@ using System.Threading.Tasks;
 //=========================================
 namespace ServerCore
 {
-    class Lock
-    {
-
-        AutoResetEvent _available=new AutoResetEvent(true);//AutoResetEvent는 자동으로 lock을 걸어줌
-        public void Acquire()//획득
-        {
-           _available.WaitOne();//입장 시도
-        }
-        public void Release()//해제
-        {
-            _available.Set();//flag=true
-        }
-    }
     class Program
     {
         static int _num = 0;
-        static Lock _lock = new Lock();
-
+        static Mutex _lock = new Mutex();//커널동기화 객체여서 느림
+        //Mutex는 잠군 횟수,잠금 유무, 스레드 아이디를 확인할 수 있음. (재진입 가능) => 비용이 많이 든다
 
         static void Thread_1()
         {
             for(int i = 0; i < 100000; i++)
             {
-                _lock.Acquire();
+                _lock.WaitOne();
                 _num++;
-                _lock.Release();
+                _lock.ReleaseMutex();
             }
         }
 
@@ -39,9 +26,9 @@ namespace ServerCore
         {
             for (int i = 0; i < 100000; i++)
             {
-                _lock.Acquire();
+                _lock.WaitOne();
                 _num--;
-                _lock.Release();
+                _lock.ReleaseMutex();
             }
         }
         static void Main(string[] args)
