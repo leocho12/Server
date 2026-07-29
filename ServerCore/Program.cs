@@ -2,24 +2,50 @@
 using System.Threading;
 using System.Threading.Tasks;
 //=========================================
-//하드웨어 최적화
+//Spin Lock
 //=========================================
 namespace ServerCore
 {
+    class SpinLock
+    {
+        volatile bool _locked = false;
+        public void Acquire()//획득
+        {
+            while (_locked)//잠금이 풀릴때까지 반복
+            {
+
+            }
+            _locked = true;//잠금 획득
+        }
+        public void Release()//해제
+        {
+
+        }
+    }
     class Program
     {
-        static int number = 0;
+        static int _num = 0;
+        static SpinLock _lock = new SpinLock();
+
 
         static void Thread_1()
         {
-            //atomic 원자성
-            for (int i = 0; i < 100000; i++)
-                { Interlocked.Increment(ref number); }
+            for(int i = 0; i < 100000; i++)
+            {
+                _lock.Acquire();
+                _num++;
+                _lock.Release();
+            }
         }
+
         static void Thread_2()
         {
             for (int i = 0; i < 100000; i++)
-                { Interlocked.Decrement(ref number); }
+            {
+                _lock.Acquire();
+                _num--;
+                _lock.Release();
+            }
         }
         static void Main(string[] args)
         {
@@ -30,8 +56,7 @@ namespace ServerCore
 
             Task.WaitAll(t1, t2);
 
-            Console.WriteLine(number);
-
+            Console.WriteLine(_num);
         }
     }
 }
