@@ -19,7 +19,14 @@ namespace ServerCore
             //위 코드는 잠금을 획득하는 동안 다른 스레드가 lock획득 가능해서 제대로 동작하지 않음
             while(true)
             {
-                int original = Interlocked.Exchange(ref _locked, 1);//원래 값을 original에 저장하고 _locked를 1로 바꿈
+                //int original = Interlocked.Exchange(ref _locked, 1);//원래 값을 original에 저장하고 _locked를 1로 바꿈
+                //if (original == 0)//original이 0이면 다른 스레드가 잠금을 획득하지 않은 상태이므로 잠금 획득
+                //    break;
+                //아래가 좀 더 일반적인 방법
+
+                int expected = 0;
+                int desired = 1;
+                int original = Interlocked.CompareExchange(ref _locked, desired, expected);//_locked가 expected와 일치하면 desired로 바꾸고, 일치하지 않으면 아무것도 안함
                 if (original == 0)//original이 0이면 다른 스레드가 잠금을 획득하지 않은 상태이므로 잠금 획득
                     break;
             }
