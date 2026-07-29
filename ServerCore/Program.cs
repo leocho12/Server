@@ -29,6 +29,11 @@ namespace ServerCore
                 int original = Interlocked.CompareExchange(ref _locked, desired, expected);//_locked가 expected와 일치하면 desired로 바꾸고, 일치하지 않으면 아무것도 안함
                 if (original == 0)//original이 0이면 다른 스레드가 잠금을 획득하지 않은 상태이므로 잠금 획득
                     break;
+
+                // 쉬기
+                //Thread.Sleep(1);    //무조건 휴식 => 무조건 1ms 쉬고 다시 시도
+                //Thread.Sleep(0);    //조건부 양보 => 자신보다 우선순위가 높은 스레드가 있으면 양보하고, 없으면 바로 돌아옴
+                Thread.Yield();     //관대한 양보 => 조건 없이 지금 실행가능한 스레드에게 양보 => 실행가능한 스레드 없으면 남은시간 소진
             }
         }
         public void Release()//해제
