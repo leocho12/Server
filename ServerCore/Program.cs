@@ -11,6 +11,7 @@ namespace ServerCore
 {
     class Program
     {
+        static Listener _listener = new Listener();
         static void Main(string[] args)
         {
             //DNS
@@ -22,23 +23,17 @@ namespace ServerCore
 
             // 문지기의 무전기 생성
 
-            Socket listenSocket = new Socket(endPoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp);
 
             try 
             {
-                // 문지기의 주소 연동
-                listenSocket.Bind(endPoint);
-
-                //영업시작
-                //backlog : 대기열의 최대 길이
-                listenSocket.Listen(10);//대기열의 최대 길이 10
+                _listener.Init(endPoint);//문지기 초기화
 
                 while (true)
                 {
                     Console.WriteLine("Listening...");
 
                     //손님입장
-                    Socket clientSocket = listenSocket.Accept();//클라이언트 소켓 생성
+                    Socket clientSocket = _listener.Accept();//클라이언트 소켓 생성
 
                     //수신
                     byte[] recvBuff = new byte[1024];//수신버퍼
