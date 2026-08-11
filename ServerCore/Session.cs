@@ -28,7 +28,7 @@ namespace ServerCore
 
         public void Disconnect()
         {
-            if (Interlocked.Exchange(ref _disconnected, 1) == 1)
+            if (Interlocked.Exchange(ref _disconnected, 1) == 1)//disconnected된 상태에서 다시 disconnnected하는것 방지
                 return;
 
 
