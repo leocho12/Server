@@ -17,17 +17,16 @@ namespace ServerCore
         {
             try
             {
-                //수신
-                byte[] recvBuff = new byte[1024];//수신버퍼
-                int recvBytes = clientSocket.Receive(recvBuff);//수신한 바이트 수
-                string recvData = Encoding.UTF8.GetString(recvBuff, 0, recvBytes);//수신한 데이터를 문자열로 변환
-                Console.WriteLine($"[From Client] {recvData}");
                 //전송
+
+                Session session = new Session();//세션에 소켓을 집어 넣어 연동 완료
+                session.Start(clientSocket);
                 byte[] sendBuff = Encoding.UTF8.GetBytes("welcome to my server");//전송할 데이터를 바이트 배열로 변환
-                clientSocket.Send(sendBuff);//전송
-                                            //쫒아내기
-                clientSocket.Shutdown(SocketShutdown.Both);//양방향 통신 종료
-                clientSocket.Close();
+                session.Send(sendBuff);
+
+                Thread.Sleep(1000);
+
+                session.Disconnect();
             }
             catch(Exception e)
             {
