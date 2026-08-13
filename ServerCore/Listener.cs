@@ -40,7 +40,7 @@ namespace ServerCore
         {
             args.AcceptSocket = null;// args의 AcceptSocket을 null로 초기화
 
-            bool pending = _listenSocket.AcceptAsync(args);// 
+            bool pending = _listenSocket.AcceptAsync(args);// 비동기적으로 연결 요청을 받음
             if (pending == false)// 연결 즉시 잡혀서 이밴트가 불리지 않음 -> 직접 OnAcceptCompleted 호출
                 OnAcceptCompleted(null, args);
         }
