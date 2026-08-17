@@ -9,20 +9,12 @@ namespace ServerCore
     internal class Listener// Listener는 델리게이트(Action<Socket>)로 "연결되면 뭘 할지"를 주입받음
     {
         Socket _listenSocket;// 클라의 연결요청을 받는 소켓
-        Action<Socket> _onAcceptHandler;// 연결되면 Program에 알려줄 콜백함수 델리게이트임
-        /*
-        델리게이트는 여러 함수를 담을 수 있는 리스트 같은 구조
-            _onAcceptHandler += A;   // [A]
-            _onAcceptHandler += B;   // [A, B]
-            _onAcceptHandler += C;   // [A, B, C]
-        이 상태에서 _onAcceptHandler.Invoke(socket)를 호출하면 A, B, C가 순서대로 호출됨
+        Func<Session> _sessionFactory;
 
-        */
-
-        public void Init(IPEndPoint endPoint, Action<Socket> _onAcceptHandler)
+        public void Init(IPEndPoint endPoint, Func<Session> sessionFactory)
         {
             _listenSocket = new Socket(endPoint.AddressFamily, SocketType.Stream, ProtocolType.Tcp);// 소켓 생성
-            this._onAcceptHandler += _onAcceptHandler;// 델리게이트에 Program에서 전달받은 콜백함수 등록
+            _sessionFactory += sessionFactory;// 델리게이트에 Program에서 전달받은 콜백함수 등록
 
             // 문지기의 주소 연동
             _listenSocket.Bind(endPoint);// 이 소켓은 endpoint포트로 들어오는 연결을 받도록 바인딩
@@ -49,7 +41,9 @@ namespace ServerCore
         {
             if(args.SocketError == SocketError.Success)
             {
-                _onAcceptHandler.Invoke(args.AcceptSocket);// 델리게이트를 실행해 담겨있는 함수들을 실행
+                Session session = _sessionFactory.Invoke();
+                session.Start(args.AcceptSocket);
+                session.OnConected(args.AcceptSocket.RemoteEndPoint);// 세션에 연결된 클라의 EndPoint를 전달
             }
             else
             {

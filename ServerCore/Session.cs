@@ -98,8 +98,8 @@ namespace ServerCore
                     {
                         _sendArgs.BufferList = null;// 버퍼리스트 초기화
                         _pendinglist.Clear();// 리스트 초기화
-
-                        Console.WriteLine($"Transfer Completed: {args.BytesTransferred}");
+                        OnSend(_sendArgs.BytesTransferred);
+                        
 
                         if (_sendQueue.Count>0)
                             RegisterSend();// 큐에 데이터가 남아있으면 다시 전송
