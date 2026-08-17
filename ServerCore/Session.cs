@@ -18,13 +18,13 @@ namespace ServerCore
         object _lock = new object();// 큐에 데이터를 넣고 빼는 작업이 동시에 일어나면 문제가 생기므로 lock을 걸어줌
         Queue<byte[]> _sendQueue=new Queue<byte[]>();// 전송할 데이터를 담을 큐
         bool _pending = false;// 전송중인지 체크용
-        SocketAsyncEventArgs _sendArgs = new SocketAsyncEventArgs();// 송신전용 소켓 생성
-
+        SocketAsyncEventArgs _sendArgs = new SocketAsyncEventArgs();// 송신전용 소켓 생성  재사용하기 위해 클래스 안에 생성
+        SocketAsyncEventArgs _recvArgs = new SocketAsyncEventArgs();// 수신전용 소켓 생성  재사용하기 위해 클래스 안에 생성
         public void Start(Socket socket)
         {
             _socket = socket;// 전달 받은 소켓 저장
-            SocketAsyncEventArgs recvArgs = new SocketAsyncEventArgs();// 수신전용 소켓 생성
-            recvArgs.Completed += new EventHandler<SocketAsyncEventArgs>(OnRevCompleted);// recvArgs객체의 Completed델리게이트에 OnRevCompleted 함수를 등록
+
+            _recvArgs.Completed += new EventHandler<SocketAsyncEventArgs>(OnRevCompleted);// recvArgs객체의 Completed델리게이트에 OnRevCompleted 함수를 등록
             /*
              OnRevCompleted (Session.cs에 정의된 우리 함수)
                 ↓ 시그니처가 일치하므로 등록 가능
@@ -32,12 +32,12 @@ namespace ServerCore
                 ↓ 이 타입으로 선언된 필드
             SocketAsyncEventArgs.Completed (실제로 함수를 담는 상자)
              */
-            recvArgs.SetBuffer(new byte[1024], 0, 1024);// 데이터를 담을 버퍼 지정
+            _recvArgs.SetBuffer(new byte[1024], 0, 1024);// 데이터를 담을 버퍼 지정
 
             _sendArgs.Completed += new EventHandler<SocketAsyncEventArgs>(OnSendCompleted);// sendArgs객체의 Completed델리게이트에 OnSendCompleted 함수를 등록
 
 
-            RegisterRecv(recvArgs);// 수신 대기 시작
+            RegisterRecv();// 수신 대기 시작
         }
 
         public void Send(byte[] sendBuff)
@@ -104,12 +104,12 @@ namespace ServerCore
             
         }
 
-        void RegisterRecv(SocketAsyncEventArgs args)
+        void RegisterRecv()
         {
-            bool pending = _socket.ReceiveAsync(args);// 비동기적으로 연결 요청을 받음
+            bool pending = _socket.ReceiveAsync(_recvArgs);// 비동기적으로 연결 요청을 받음
             // 현재 이밴트가 하나밖에 없기때문에 완료될때마다 각기 다른 스레드에서 호출될수는 있어도 동시에 호출될 일은 없음
             if (pending == false)// 연결 즉시 잡혀서 이밴트가 불리지 않음 -> 직접 OnRevCompleted 호출
-                OnRevCompleted(null, args);
+                OnRevCompleted(null, _recvArgs);
         }
 
         void OnRevCompleted(object sender, SocketAsyncEventArgs args)
@@ -121,7 +121,7 @@ namespace ServerCore
                 {
                     string recvData = Encoding.UTF8.GetString(args.Buffer, args.Offset, args.BytesTransferred);//수신한 데이터를 문자열로 변환
                     Console.WriteLine($"[From Client] {recvData}");// 출력
-                    RegisterRecv(args);// 수신 대기 시작
+                    RegisterRecv();// 수신 대기 시작
                 }
                 catch (Exception e)
                 {
