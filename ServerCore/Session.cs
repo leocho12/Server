@@ -11,7 +11,7 @@ namespace ServerCore
     //동기: 호출한 스레드가 전송 완료 될때 까지 정지
     //비동기: 호출한 스레드가 전송 완료 될때 까지 정지하지 않고 바로 리턴
 
-    abstract class Session// 같은 프로젝트 안에서만 이 클래스 사용가능
+    public abstract class Session// 같은 프로젝트 안에서만 이 클래스 사용가능
     {
         Socket _socket;
         int _disconnected = 0;// 연결 상태 체크용 0=연결중, 1=끊김
