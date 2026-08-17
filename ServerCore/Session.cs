@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Threading;
@@ -10,7 +11,7 @@ namespace ServerCore
     //동기: 호출한 스레드가 전송 완료 될때 까지 정지
     //비동기: 호출한 스레드가 전송 완료 될때 까지 정지하지 않고 바로 리턴
 
-    internal class Session// 같은 프로젝트 안에서만 이 클래스 사용가능
+    abstract class Session// 같은 프로젝트 안에서만 이 클래스 사용가능
     {
         Socket _socket;
         int _disconnected = 0;// 연결 상태 체크용 0=연결중, 1=끊김
@@ -20,6 +21,12 @@ namespace ServerCore
         List<ArraySegment<byte>> _pendinglist = new List<ArraySegment<byte>>();// 미리 리스트를 만들고  재사용하기 위해 클래스 안에 생성
         SocketAsyncEventArgs _sendArgs = new SocketAsyncEventArgs();// 송신전용 소켓 생성  재사용하기 위해 클래스 안에 생성
         SocketAsyncEventArgs _recvArgs = new SocketAsyncEventArgs();// 수신전용 소켓 생성  재사용하기 위해 클래스 안에 생성
+
+        public abstract void OnConected(EndPoint endPoint);// 연결되었을 때 호출될 함수
+        public abstract void OnRecv(ArraySegment<byte> buffer);// 데이터가 도착했을 때 호출될 함수
+        public abstract void OnSend(int numOfBytes);// 데이터가 전송될 때 호출될 함수
+        public abstract void OnDisconnected(EndPoint endPoint);// 연결이 끊겼을 때 호출될 함수
+
         public void Start(Socket socket)
         {
             _socket = socket;// 전달 받은 소켓 저장
@@ -55,7 +62,7 @@ namespace ServerCore
             if (Interlocked.Exchange(ref _disconnected, 1) == 1)//disconnected된 상태에서 다시 disconnnected하는것 방지
                 return;
 
-
+            OnDisconnected(_socket.RemoteEndPoint);
             _socket.Shutdown(SocketShutdown.Both);// 양방향통신 종료신호 보냄
             _socket.Close();// 소켓 리소스 해제
         }
@@ -125,8 +132,8 @@ namespace ServerCore
                 // TODO
                 try
                 {
-                    string recvData = Encoding.UTF8.GetString(args.Buffer, args.Offset, args.BytesTransferred);//수신한 데이터를 문자열로 변환
-                    Console.WriteLine($"[From Client] {recvData}");// 출력
+                    OnRecv(new ArraySegment<byte>(args.Buffer, args.Offset, args.BytesTransferred));
+
                     RegisterRecv();// 수신 대기 시작
                 }
                 catch (Exception e)

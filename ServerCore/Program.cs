@@ -9,6 +9,29 @@ using System.Threading.Tasks;
 //=========================================
 namespace ServerCore
 {
+    class GameSession : Session
+    {
+        public override void OnConected(EndPoint endPoint)
+        {
+            
+        }
+
+        public override void OnDisconnected(EndPoint endPoint)
+        {
+            
+        }
+
+        public override void OnRecv(ArraySegment<byte> buffer)
+        {
+            string recvData = Encoding.UTF8.GetString(buffer.Array, buffer.Offset, buffer.Count);//수신한 데이터를 문자열로 변환
+            Console.WriteLine($"[From Client] {recvData}");// 출력
+        }
+
+        public override void OnSend(int numOfBytes)
+        {
+            
+        }
+    }
     class Program
     {
         static Listener _listener = new Listener();// Listener가 새 연결을 잡을 때마다 호출되는 콜백. 클라이언트 1명당 1번씩 실행 -> 클라가 서버에 접속할 때 마다 OnAcceptHandler함수가 한번 씩 실행됨
@@ -19,7 +42,7 @@ namespace ServerCore
             {
                 //전송
 
-                Session session = new Session();//세션에 소켓을 집어 넣어 연동 완료
+                Session session = new GameSession();//세션에 소켓을 집어 넣어 연동 완료
                 session.Start(clientSocket);
                 byte[] sendBuff = Encoding.UTF8.GetBytes("welcome to my server");//전송할 데이터를 바이트 배열로 변환
                 session.Send(sendBuff);// 전송

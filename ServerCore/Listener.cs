@@ -6,7 +6,7 @@ using System.Text;
 
 namespace ServerCore
 {
-    internal class Listener
+    internal class Listener// Listener는 델리게이트(Action<Socket>)로 "연결되면 뭘 할지"를 주입받음
     {
         Socket _listenSocket;// 클라의 연결요청을 받는 소켓
         Action<Socket> _onAcceptHandler;// 연결되면 Program에 알려줄 콜백함수 델리게이트임
