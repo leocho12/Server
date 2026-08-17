@@ -17,7 +17,7 @@ namespace ServerCore
 
         object _lock = new object();// 큐에 데이터를 넣고 빼는 작업이 동시에 일어나면 문제가 생기므로 lock을 걸어줌
         Queue<byte[]> _sendQueue=new Queue<byte[]>();// 전송할 데이터를 담을 큐
-        bool _pending = false;// 전송중인지 체크용
+        List<ArraySegment<byte>> _pendinglist = new List<ArraySegment<byte>>();// 미리 리스트를 만들고  재사용하기 위해 클래스 안에 생성
         SocketAsyncEventArgs _sendArgs = new SocketAsyncEventArgs();// 송신전용 소켓 생성  재사용하기 위해 클래스 안에 생성
         SocketAsyncEventArgs _recvArgs = new SocketAsyncEventArgs();// 수신전용 소켓 생성  재사용하기 위해 클래스 안에 생성
         public void Start(Socket socket)
@@ -45,7 +45,7 @@ namespace ServerCore
             lock (_lock)
             {
                 _sendQueue.Enqueue(sendBuff);
-                if (_pending == false)
+                if (_pendinglist.Count == 0)// 리스트가 비어있으면 전송중이 아니므로 바로 전송 시작
                     RegisterSend();
             }
         }
@@ -65,9 +65,14 @@ namespace ServerCore
         void RegisterSend()
         {
             // 이미 락을 건 상태에서 호출 함으로 락을 걸 필요 없음
-            _pending = true;
-            byte[] buff= _sendQueue.Dequeue();// 큐에서 데이터를 하나 꺼냄
-            _sendArgs.SetBuffer(buff,0, buff.Length);// 버퍼연결
+
+            _pendinglist.Clear();// 리스트 초기화
+            while (_sendQueue.Count > 0)// sendqueue가 빌 때 까지
+            {
+                byte[] buff = _sendQueue.Dequeue();// 큐에서 데이터를 하나 꺼냄
+                _pendinglist.Add(new ArraySegment<byte>(buff, 0, buff.Length));// 버퍼연결
+            }
+            _sendArgs.BufferList = _pendinglist;// 리스트에 추가
 
             bool pending = _socket.SendAsync(_sendArgs);
             if (pending == false)
@@ -84,12 +89,13 @@ namespace ServerCore
                     // TODO
                     try
                     {
-                        if(_sendQueue.Count>0)
+                        _sendArgs.BufferList = null;// 버퍼리스트 초기화
+                        _pendinglist.Clear();// 리스트 초기화
+
+                        Console.WriteLine($"Transfer Completed: {args.BytesTransferred}");
+
+                        if (_sendQueue.Count>0)
                             RegisterSend();// 큐에 데이터가 남아있으면 다시 전송
-                        else
-                             _pending = false;
-
-
                     }
                     catch (Exception e)
                     {
