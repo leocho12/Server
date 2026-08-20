@@ -8,18 +8,39 @@ using ServerCore;
 
 namespace Server
 {
+    class Packet
+    {
+        public ushort size;
+        public ushort packetId;
+    }
+    class LoginOkPacket : Packet
+    {
+        
+    }
+
     class GameSession : Session
     {
         public override void OnConected(EndPoint endPoint)
         {
             Console.WriteLine($"OnConnected: {endPoint}");
 
-            byte[] sendBuff = Encoding.UTF8.GetBytes("welcome to my server");//전송할 데이터를 바이트 배열로 변환
-            Send(sendBuff);// 전송
+            //전송
+            Packet packet = new Packet() { size = 100, packetId = 10 };
 
-            Thread.Sleep(1000);// 1초간 강제 대기
+            ArraySegment<byte> openSegment = SendBufferHelper.Open(4096);
+            byte[] buffer = BitConverter.GetBytes(packet.size);
+            byte[] buffer2 = BitConverter.GetBytes(packet.packetId);
+            Array.Copy(buffer, 0, openSegment.Array, openSegment.Offset, buffer.Length);
+            Array.Copy(buffer2, 0, openSegment.Array, openSegment.Offset + buffer.Length, buffer2.Length);
+            ArraySegment<byte> sendBuff = SendBufferHelper.Close(buffer.Length + buffer2.Length);
 
-            Disconnect();// 연결 해제
+
+            // 100명
+            // 1->이동패킷이 100명
+            // 100-> 이동 패킷이 100*100=10000개
+            Send(sendBuff);
+            Thread.Sleep(1000);
+            Disconnect();
         }
 
         public override void OnDisconnected(EndPoint endPoint)

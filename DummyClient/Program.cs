@@ -5,12 +5,14 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using ServerCore;
+using System.Security.Cryptography;
 
 // TCP: 전송순서 보장됨    속도느림    신뢰성 높음  택배배송 서비스로 정해진 물류라인이 있음  연결되었다는 약속을 맺음   캐치볼을 함
 // UDP: 전송순서 보장 안됨 속도빠름    신뢰성 낮음  퀵서비스로 정해진 물류라인이 없음                                  바구니에 공을 던짐
 
 namespace DummyClient
 {
+   
     class GameSession : Session
     {
         public override void OnConected(EndPoint endPoint)
@@ -18,11 +20,22 @@ namespace DummyClient
             Console.WriteLine($"OnConnected: {endPoint}");
 
             //전송
-            for (int i = 0; i < 5; i++)
-            {
-                byte[] sendBuff = Encoding.UTF8.GetBytes($"Hello World {i}");
-                Send(sendBuff);
-            }
+            Knight knight = new Knight() { hp = 100, attack = 10 };
+
+            ArraySegment<byte> openSegment = SendBufferHelper.Open(4096);
+            byte[] buffer=BitConverter.GetBytes(knight.hp);
+            byte[] buffer2=BitConverter.GetBytes(knight.attack);
+            Array.Copy(buffer,0, openSegment.Array, openSegment.Offset, buffer.Length);
+            Array.Copy(buffer2,0, openSegment.Array, openSegment.Offset + buffer.Length, buffer2.Length);
+            ArraySegment<byte> sendBuff= SendBufferHelper.Close(buffer.Length + buffer2.Length);
+
+
+            // 100명
+            // 1->이동패킷이 100명
+            // 100-> 이동 패킷이 100*100=10000개
+            Send(sendBuff);
+            Thread.Sleep(1000);
+            Disconnect();
         }
 
         public override void OnDisconnected(EndPoint endPoint)

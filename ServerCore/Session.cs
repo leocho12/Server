@@ -19,7 +19,7 @@ namespace ServerCore
         RecvBuffer _recvBuffer = new RecvBuffer(1024);
 
         object _lock = new object();// 큐에 데이터를 넣고 빼는 작업이 동시에 일어나면 문제가 생기므로 lock을 걸어줌
-        Queue<byte[]> _sendQueue=new Queue<byte[]>();// 전송할 데이터를 담을 큐
+        Queue<ArraySegment<byte>> _sendQueue=new Queue<ArraySegment<byte>>();// 전송할 데이터를 담을 큐
         List<ArraySegment<byte>> _pendinglist = new List<ArraySegment<byte>>();// 미리 리스트를 만들고  재사용하기 위해 클래스 안에 생성
         SocketAsyncEventArgs _sendArgs = new SocketAsyncEventArgs();// 송신전용 소켓 생성  재사용하기 위해 클래스 안에 생성
         SocketAsyncEventArgs _recvArgs = new SocketAsyncEventArgs();// 수신전용 소켓 생성  재사용하기 위해 클래스 안에 생성
@@ -48,7 +48,7 @@ namespace ServerCore
             RegisterRecv();// 수신 대기 시작
         }
 
-        public void Send(byte[] sendBuff)
+        public void Send(ArraySegment<byte> sendBuff)
         {
             lock (_lock)
             {
@@ -77,8 +77,8 @@ namespace ServerCore
             _pendinglist.Clear();// 리스트 초기화
             while (_sendQueue.Count > 0)// sendqueue가 빌 때 까지
             {
-                byte[] buff = _sendQueue.Dequeue();// 큐에서 데이터를 하나 꺼냄
-                _pendinglist.Add(new ArraySegment<byte>(buff, 0, buff.Length));// 버퍼연결
+                ArraySegment<byte> buff = _sendQueue.Dequeue();// 큐에서 데이터를 하나 꺼냄
+                _pendinglist.Add(buff);// 버퍼연결
             }
             _sendArgs.BufferList = _pendinglist;// 리스트에 추가
 
