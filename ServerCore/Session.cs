@@ -8,8 +8,36 @@ using System.Threading;
 namespace ServerCore
 {
 
-    //동기: 호출한 스레드가 전송 완료 될때 까지 정지
-    //비동기: 호출한 스레드가 전송 완료 될때 까지 정지하지 않고 바로 리턴
+    public abstract class PacketSession : Session
+    {
+        public static readonly int HeaderSize = 2;
+        //[[size(2)][packetid(2)][...][size(2)][packetid(2)][...]
+        public sealed override int OnRecv(ArraySegment<byte> buffer)
+        {
+            int processLen = 0;
+
+            while (true)
+            {
+                // 최소한 헤더는 파싱할 수 있는지 확인
+                if (buffer.Count < HeaderSize)
+                    break;
+
+                // 패킷이 완전체로 도착했는지 확인
+                ushort dataSize = BitConverter.ToUInt16(buffer.Array, buffer.Offset);
+                if (buffer.Count < dataSize)// 패킷이 부분적으로 왔음
+                    break;
+
+                // 여기서 부터는 어떻게든 패킷 조립 가능
+                OnRecvPacket(new ArraySegment<byte>(buffer.Array, buffer.Offset, dataSize));
+
+                processLen += dataSize;
+                buffer=new ArraySegment<byte>(buffer.Array, buffer.Offset + dataSize, buffer.Count - dataSize);
+            }
+            return processLen;
+        }
+
+        public abstract void OnRecvPacket(ArraySegment<byte> buffer);
+    }
 
     public abstract class Session// 같은 프로젝트 안에서만 이 클래스 사용가능
     {

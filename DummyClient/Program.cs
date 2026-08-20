@@ -12,30 +12,31 @@ using System.Security.Cryptography;
 
 namespace DummyClient
 {
-   
+    class Packet// 패킷을 보낼땐 최대한 압축해서 보내는게 중요
+    {
+        public ushort size;
+        public ushort packetId;
+    }
     class GameSession : Session
     {
         public override void OnConected(EndPoint endPoint)
         {
             Console.WriteLine($"OnConnected: {endPoint}");
 
+            Packet packet = new Packet() { size = 4, packetId = 7 };
+
             //전송
-            Knight knight = new Knight() { hp = 100, attack = 10 };
+            for (int i = 0; i < 5; i++)
+            {
+                ArraySegment<byte> openSegment = SendBufferHelper.Open(4096);
+                byte[] buffer = BitConverter.GetBytes(packet.size);
+                byte[] buffer2 = BitConverter.GetBytes(packet.packetId);
+                Array.Copy(buffer, 0, openSegment.Array, openSegment.Offset, buffer.Length);
+                Array.Copy(buffer2, 0, openSegment.Array, openSegment.Offset + buffer.Length, buffer2.Length);
+                ArraySegment<byte> sendBuff = SendBufferHelper.Close(packet.size);
 
-            ArraySegment<byte> openSegment = SendBufferHelper.Open(4096);
-            byte[] buffer=BitConverter.GetBytes(knight.hp);
-            byte[] buffer2=BitConverter.GetBytes(knight.attack);
-            Array.Copy(buffer,0, openSegment.Array, openSegment.Offset, buffer.Length);
-            Array.Copy(buffer2,0, openSegment.Array, openSegment.Offset + buffer.Length, buffer2.Length);
-            ArraySegment<byte> sendBuff= SendBufferHelper.Close(buffer.Length + buffer2.Length);
-
-
-            // 100명
-            // 1->이동패킷이 100명
-            // 100-> 이동 패킷이 100*100=10000개
-            Send(sendBuff);
-            Thread.Sleep(1000);
-            Disconnect();
+                Send(sendBuff);
+            }
         }
 
         public override void OnDisconnected(EndPoint endPoint)
