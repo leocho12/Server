@@ -6,6 +6,9 @@ using System.Text;
 using System.Threading;
 using ServerCore;
 
+// TCP: 전송순서 보장됨    속도느림    신뢰성 높음  택배배송 서비스로 정해진 물류라인이 있음  연결되었다는 약속을 맺음   캐치볼을 함
+// UDP: 전송순서 보장 안됨 속도빠름    신뢰성 낮음  퀵서비스로 정해진 물류라인이 없음                                  바구니에 공을 던짐
+
 namespace DummyClient
 {
     class GameSession : Session
@@ -27,10 +30,11 @@ namespace DummyClient
             Console.WriteLine($"OnDisconnected: {endPoint}");
         }
 
-        public override void OnRecv(ArraySegment<byte> buffer)
+        public override int OnRecv(ArraySegment<byte> buffer)
         {
             string recvData = Encoding.UTF8.GetString(buffer.Array, buffer.Offset, buffer.Count);//수신한 데이터를 문자열로 변환
             Console.WriteLine($"[From Server] {recvData}");// 출력
+            return buffer.Count;
         }
 
         public override void OnSend(int numOfBytes)

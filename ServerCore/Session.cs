@@ -16,6 +16,8 @@ namespace ServerCore
         Socket _socket;
         int _disconnected = 0;// 연결 상태 체크용 0=연결중, 1=끊김
 
+        RecvBuffer _recvBuffer = new RecvBuffer(1024);
+
         object _lock = new object();// 큐에 데이터를 넣고 빼는 작업이 동시에 일어나면 문제가 생기므로 lock을 걸어줌
         Queue<byte[]> _sendQueue=new Queue<byte[]>();// 전송할 데이터를 담을 큐
         List<ArraySegment<byte>> _pendinglist = new List<ArraySegment<byte>>();// 미리 리스트를 만들고  재사용하기 위해 클래스 안에 생성
@@ -23,7 +25,7 @@ namespace ServerCore
         SocketAsyncEventArgs _recvArgs = new SocketAsyncEventArgs();// 수신전용 소켓 생성  재사용하기 위해 클래스 안에 생성
 
         public abstract void OnConected(EndPoint endPoint);// 연결되었을 때 호출될 함수
-        public abstract void OnRecv(ArraySegment<byte> buffer);// 데이터가 도착했을 때 호출될 함수
+        public abstract int OnRecv(ArraySegment<byte> buffer);// 데이터가 도착했을 때 호출될 함수 처리한 데이터 양 리턴
         public abstract void OnSend(int numOfBytes);// 데이터가 전송될 때 호출될 함수
         public abstract void OnDisconnected(EndPoint endPoint);// 연결이 끊겼을 때 호출될 함수
 
@@ -39,7 +41,6 @@ namespace ServerCore
                 ↓ 이 타입으로 선언된 필드
             SocketAsyncEventArgs.Completed (실제로 함수를 담는 상자)
              */
-            _recvArgs.SetBuffer(new byte[1024], 0, 1024);// 데이터를 담을 버퍼 지정
 
             _sendArgs.Completed += new EventHandler<SocketAsyncEventArgs>(OnSendCompleted);// sendArgs객체의 Completed델리게이트에 OnSendCompleted 함수를 등록
 
@@ -119,6 +120,10 @@ namespace ServerCore
 
         void RegisterRecv()
         {
+            _recvBuffer.Clean();// 수신버퍼 초기화
+            ArraySegment<byte> segment = _recvBuffer.WriteSegment;
+            _recvArgs.SetBuffer(segment.Array, segment.Offset, segment.Count);// 수신버퍼 설정
+
             bool pending = _socket.ReceiveAsync(_recvArgs);// 비동기적으로 연결 요청을 받음
             // 현재 이밴트가 하나밖에 없기때문에 완료될때마다 각기 다른 스레드에서 호출될수는 있어도 동시에 호출될 일은 없음
             if (pending == false)// 연결 즉시 잡혀서 이밴트가 불리지 않음 -> 직접 OnRevCompleted 호출
@@ -132,7 +137,27 @@ namespace ServerCore
                 // TODO
                 try
                 {
-                    OnRecv(new ArraySegment<byte>(args.Buffer, args.Offset, args.BytesTransferred));
+                    //WritePos를 이동시켜서 실제로 수신된 데이터의 크기만큼 커서를 이동
+                    if(_recvBuffer.OnWrite(args.BytesTransferred) == false)// 수신버퍼에 데이터를 쓸 수 없으면
+                    {
+                        Disconnect();// 연결 해제
+                        return;
+                    }
+
+                    // 실제로 수신된 데이터만큼 커서를 이동시킨 후, ReadSegment를 통해 실제로 수신된 데이터의 위치와 크기를 전달
+                    int processLen = OnRecv(_recvBuffer.ReadSegment);// 처리한 데이터 양
+                    if(processLen < 0 || _recvBuffer.DataSize < processLen)
+                    {
+                        Disconnect();// 연결 해제
+                        return;
+                    }
+
+                    // 처리한 데이터만큼 커서를 이동시킴
+                    if(_recvBuffer.OnRead(processLen) == false)// 수신버퍼에서 데이터를 읽을 수 없으면
+                    {
+                        Disconnect();// 연결 해제
+                        return;
+                    }
 
                     RegisterRecv();// 수신 대기 시작
                 }

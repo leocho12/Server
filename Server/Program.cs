@@ -27,10 +27,11 @@ namespace Server
             Console.WriteLine($"OnDisconnected: {endPoint}");
         }
 
-        public override void OnRecv(ArraySegment<byte> buffer)
+        public override int OnRecv(ArraySegment<byte> buffer)
         {
             string recvData = Encoding.UTF8.GetString(buffer.Array, buffer.Offset, buffer.Count);//수신한 데이터를 문자열로 변환
             Console.WriteLine($"[From Client] {recvData}");// 출력
+            return buffer.Count;
         }
 
         public override void OnSend(int numOfBytes)
